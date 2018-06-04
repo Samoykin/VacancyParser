@@ -1,0 +1,136 @@
+﻿<Window x:Class="VacancyParser.View.MainWindowView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VacancyParser"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+        mc:Ignorable="d"
+        Title="Vacancy Parser v1.1.0.1" Height="650" Width="850" Icon="/VacancyParser;component/Resourses/icon-vacant.ico" ResizeMode="CanMinimize">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="300"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="16"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Button x:Name="btn_GetHtml" Grid.Column="0" Grid.Row="0" Content="Button" Command="{Binding ClickGetHtml}" HorizontalAlignment="Left" Margin="31,55,0,0" VerticalAlignment="Top" Width="75" Visibility="Hidden"/>
+        <Grid  Name="gridCarDetails" Grid.Column="0" Grid.Row="1"  DataContext="{Binding ElementName=lstVacancies, Path=SelectedItem}" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
+            
+            <TextBlock Grid.ColumnSpan="2" Grid.Row="0" Margin="5"  Text="{Binding Path=Name}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" />
+            
+            <StackPanel Grid.Row="1">
+                <Rectangle HorizontalAlignment="Left"  Width="190" Height="150" VerticalAlignment="Top" Margin="7,0,0,0">
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="{Binding Pic}" Stretch="Uniform" />
+                    </Rectangle.Fill>
+                </Rectangle>
+            </StackPanel>
+            
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="1" Margin="5" Text="{Binding Path=Salary}" TextAlignment="Center" Foreground="#FF2BBB00" HorizontalAlignment="Left" Width="290" FontSize="14" FontWeight="Bold" />
+                <TextBlock x:Name="companyName"  Grid.Row="2" Margin="5" TextAlignment="Center" HorizontalAlignment="Left" Width="290" >
+                    <Hyperlink NavigateUri="{Binding  Path=Website}" RequestNavigate="Hyperlink_RequestNavigate" > 
+                        <TextBlock Text="{Binding Path=Company}"/>
+                    </Hyperlink>                    
+                </TextBlock>
+                <TextBlock Grid.Row="3" Margin="5" Text="{Binding Path=City}" TextAlignment="Center" HorizontalAlignment="Left" Width="290" />
+                <TextBlock Grid.Row="4" Margin="5" Text="{Binding Path=DateVac}" TextAlignment="Center" HorizontalAlignment="Left" Width="290" />
+                <TextBlock Grid.Row="5" Margin="5" Text="{Binding Path=Type}" TextAlignment="Center" HorizontalAlignment="Left" Width="290" />
+            </Grid>
+            
+            <TextBlock Grid.Row="2" Margin="5"  Text="Описание" FontSize="12" FontWeight="Bold" />
+            
+            <ListView Name="ltDescr" Grid.ColumnSpan="2" Grid.Row="3" ItemsSource="{Binding Description}" Height="310" ScrollViewer.VerticalScrollBarVisibility="Hidden"  HorizontalAlignment="Left"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="1,0,0,0" BorderBrush="{x:Null}">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                            <TextBlock Text=""/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            
+            <TextBlock Grid.Row="4" Margin="5"  Text="Навыки" FontSize="12" FontWeight="Bold" />
+            <TextBlock Grid.Row="4" Grid.Column="1" Margin="5"  Text="{Binding Path=Exp}" />            
+        </Grid>
+
+        <Grid Name="gridList" Grid.Column="1" Grid.Row="1" Margin="0,0,0,1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"></RowDefinition>
+                <RowDefinition Height="30"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+                <RowDefinition Height="25"></RowDefinition>
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Margin="0,5,0,0">
+                <WrapPanel>
+                    <TextBox x:Name="tb2" HorizontalAlignment="Left" Height="23" TextWrapping="Wrap" InputLanguageManager.InputLanguage="ru-RU" VerticalAlignment="Top" Width="220" Text="{Binding Misc.SearchText}" />
+                    <Button Content="Поиск" Width="60" Command="{Binding ClickSearch}" Margin="5,0,7,0"/>
+                </WrapPanel>
+                <WrapPanel>
+                    <RadioButton Content="На сайте" Margin="20,0,0,0" IsChecked="{Binding Misc.SearchTypeSite}"/>
+                    <RadioButton Content="В базе" Margin="20,0,0,0" />                    
+                </WrapPanel>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Margin="5" Text="{Binding Path=Misc.StatusUpd}" TextAlignment="Center" Foreground="#FF2BBB00" HorizontalAlignment="Left" Width="290" />
+
+            <Expander Grid.Row="2" Header="Сортировка" Margin="0,0,0,7">
+                <StackPanel>
+                    <RadioButton Content="Название ↑" Command="{Binding SortNameAscCommand}" Margin="20,0,0,0" IsChecked="True"/>
+                    <RadioButton Content="Название ↓" Command="{Binding SortNameDescCommand}" Margin="20,0,0,0" />
+                </StackPanel>
+            </Expander>
+
+            <ListView Name="lstVacancies" Grid.Row="3" SelectedIndex="{Binding Misc.SelectedIndex}" ItemsSource="{Binding Vacancies}"  HorizontalAlignment="Left" Width="290" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="1,0,0,0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                            <TextBlock Name="tb1" Text="{Binding Salary}" Foreground="#FF393C30" TextWrapping="Wrap" FontSize="10"/>
+                            <Line Stroke="#FFD6DDFD" X2="260" Y1="1" Y2="1" X1="10" StrokeThickness="2"></Line>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <WrapPanel Grid.Row="4">
+                <TextBlock Margin="5"  Text="Выбрано вакансий:"/>
+                <TextBlock Margin="5"  Text="{Binding Path=Misc.VacCount}" FontWeight="Bold" Foreground="#FF2DADF5"/>
+            </WrapPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="2" Grid.Column="1" Text="Самойкин Андрей, 2017" TextAlignment="Right"  HorizontalAlignment="Left" Width="290" FontSize="10" />
+    </Grid>
+</Window>
