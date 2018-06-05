@@ -7,50 +7,41 @@
     using System.Data.SQLite;
     using System.IO;
     using System.Linq;
-
     using Model;
+    using NLog;
 
     /// <summary>База банных.</summary>
     public class DBConnect
-    {
-        private string databaseName = "VacancyDB.sqlite";
-        private string pass = "Xt,ehfirf3";
-        private string logText = string.Empty;
-        private LogFile logFile = new LogFile();
-
+    {        
+        private const string DatabaseName = "VacancyDB.sqlite";
+        private const string Pass = "Xt,ehfirf3";
+        private Logger logger = LogManager.GetCurrentClassLogger();
+        
         /// <summary>Создать БД.</summary>
         public void CreateBase()
         {
-            if (!File.Exists(this.databaseName))
+            if (!File.Exists(DatabaseName))
             {
-                SQLiteConnection.CreateFile(this.databaseName);
+                SQLiteConnection.CreateFile(DatabaseName);
                 var conn = new SQLiteConnection("Data Source=DBTels.sqlite;Version=3;");
-                conn.SetPassword(this.pass);
+                conn.SetPassword(Pass);
 
-                this.logText = DateTime.Now.ToString() + "|event|DBConnect - CreateBase|Создана БД " + this.databaseName;
-                this.logFile.WriteLog(this.logText);
+                this.logger.Info("Создана БД " + DatabaseName);
             }
         }
 
         /// <summary>Создать таблицу.</summary>
         public void CreateTable()
         {
-            try
+            
+            using (var conn = new SQLiteConnection(this.Connstring()))
             {
-                using (var conn = new SQLiteConnection(this.Connstring()))
-                {
-                    var query = "CREATE TABLE vacancyInfo (id INTEGER PRIMARY KEY UNIQUE, VacId VARCHAR, Name VARCHAR, Company VARCHAR, Website VARCHAR, Salary VARCHAR, Exp VARCHAR, City VARCHAR, Description VARCHAR, Address VARCHAR, Type VARCHAR, DateVac VARCHAR);";
+                var query = "CREATE TABLE vacancyInfo (id INTEGER PRIMARY KEY UNIQUE, VacId VARCHAR, Name VARCHAR, Company VARCHAR, Website VARCHAR, Salary VARCHAR, Exp VARCHAR, City VARCHAR, Description VARCHAR, Address VARCHAR, Type VARCHAR, DateVac VARCHAR);";
 
-                    SQLiteCommand command = new SQLiteCommand(query, conn);
-                    conn.Open();
-                    command.ExecuteNonQuery();
-                    conn.Close();
-                }
-            }
-            catch (SQLiteException ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|DBConnect - CreateTable|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
+                SQLiteCommand command = new SQLiteCommand(query, conn);
+                conn.Open();
+                command.ExecuteNonQuery();
+                conn.Close();
             }
         }
 
@@ -58,26 +49,18 @@
         /// <param name="vacancies">Вакансии.</param>
         public void WriteData(List<VacModel> vacancies)
         {
-            try
-            {
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
                     for (int i = 0; i < vacancies.Count(); i++)
                     {
                         string strDescr = string.Join(" ", vacancies[i].Description.ToArray());
 
-                        var command = new SQLiteCommand("INSERT INTO 'vacancyInfo' ('VacId', 'Name', 'Company', 'Website', 'Salary', 'Exp', 'City', 'Description', 'Address', 'Type', 'DateVac') VALUES ('" + vacancies[i].Id + "', '" + vacancies[i].Name + "', '" + vacancies[i].Company + "', '" + vacancies[i].Website + "', '" + vacancies[i].Salary + "', '" + vacancies[i].Exp + "', '" + vacancies[i].City + "', '" + strDescr + "', '" + vacancies[i].Address + "', '" + vacancies[i].Type + "', '" + vacancies[i].DateVac + "')", conn);
+                        var command = new SQLiteCommand($"INSERT INTO 'vacancyInfo' ('VacId', 'Name', 'Company', 'Website', 'Salary', 'Exp', 'City', 'Description', 'Address', 'Type', 'DateVac') VALUES ('{vacancies[i].Id}', '{vacancies[i].Name}', '{vacancies[i].Company}', '{vacancies[i].Website}', '{vacancies[i].Salary}', '{vacancies[i].Exp}', '{vacancies[i].City}', '{strDescr}', '{vacancies[i].Address}', '{vacancies[i].Type}', '{vacancies[i].DateVac}')", conn);
                         conn.Open();
                         command.ExecuteNonQuery();
                         conn.Close();
                     }                    
-                }
-            }
-            catch (SQLiteException ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|DBConnect - WriteData|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
-            }            
+                }        
         }
 
         /// <summary>Прочитать из БД.</summary>
@@ -97,12 +80,10 @@
                     query = "SELECT * FROM vacancyInfo LIMIT 1000";
                     break;
                 case 2:
-                    query = "SELECT * FROM vacancyInfo WHERE Name Like '%" + searchText + "%'";
+                    query = $"SELECT * FROM vacancyInfo WHERE Name Like '%{searchText}%'";
                     break;
             }
 
-            try
-            {
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
                     conn.Open();
@@ -170,12 +151,6 @@
 
                     conn.Close();
                 }
-            }
-            catch (SQLiteException ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|DBConnect - ReadData|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
-            }
 
             return vacancies;
         }
@@ -192,8 +167,6 @@
             var flag = false;
 
             // вычитываем id всех вакансий из БД
-            try
-            {
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
                     conn.Open();
@@ -206,13 +179,7 @@
                     }
 
                     conn.Close();
-                }
-            }
-            catch (SQLiteException ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|DBConnect - CheckVacanciesInDB|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
-            }
+                }            
 
             // выбираем новые вакансии
             foreach (var v in siteVacansies)
@@ -239,35 +206,27 @@
             }
 
             // записываем новые вакансии в БД
-            try
-            {
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
                     for (int i = 0; i < newVacId.Count(); i++)
                     {
                         var strDescr = string.Join("  ", siteVacTemp[i].Description.ToArray());
 
-                        var command = new SQLiteCommand("INSERT INTO 'vacancyInfo' ('VacId', 'Name', 'Company', 'Website', 'Salary', 'Exp', 'City', 'Description', 'Address', 'Type', 'DateVac') VALUES ('" + siteVacTemp[i].Id + "', '" + siteVacTemp[i].Name + "', '" + siteVacTemp[i].Company + "', '" + siteVacTemp[i].Website + "', '" + siteVacTemp[i].Salary + "', '" + siteVacTemp[i].Exp + "', '" + siteVacTemp[i].City + "', '" + strDescr + "', '" + siteVacTemp[i].Address + "', '" + siteVacTemp[i].Type + "', '" + siteVacTemp[i].DateVac + "')", conn);
+                        var command = new SQLiteCommand($"INSERT INTO 'vacancyInfo' ('VacId', 'Name', 'Company', 'Website', 'Salary', 'Exp', 'City', 'Description', 'Address', 'Type', 'DateVac') VALUES ('{siteVacTemp[i].Id}', '{siteVacTemp[i].Name}', '{siteVacTemp[i].Company}', '{siteVacTemp[i].Website}', '{siteVacTemp[i].Salary}', '{siteVacTemp[i].Exp}', '{siteVacTemp[i].City}', '{strDescr}', '{siteVacTemp[i].Address}', '{siteVacTemp[i].Type}', '{siteVacTemp[i].DateVac}')", conn);
                         conn.Open();
                         command.ExecuteNonQuery();
                         conn.Close();
 
                         flag = true;
                     }
-                }
-            }
-            catch (SQLiteException ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|DBConnect - CheckVacanciesInDB|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
-            }
+                }            
 
             return flag;
         }
 
         private string Connstring()
         {
-            string connStr = string.Format("Data Source={0};Version=3;Password={1};", this.databaseName, this.pass);
+            string connStr = string.Format("Data Source={0};Version=3;Password={1};", DatabaseName, Pass);
             return connStr;
         }
     }

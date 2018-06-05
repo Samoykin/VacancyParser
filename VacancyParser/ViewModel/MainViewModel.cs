@@ -8,48 +8,53 @@
     using System.Threading.Tasks;
     using System.Windows.Input;
     using System.Windows.Threading;
-
     using Helpers;
     using Model;
+    using NLog;
 
     /// <summary>Главная ViewModel.</summary>
     public class MainViewModel
     {
-        private string dataBaseName = "VacancyDB.sqlite";
+        private const string DataBaseName = "VacancyDB.sqlite";
         private DBConnect dbc = new DBConnect();
         private bool flag = false;
         private DispatcherTimer checkDownloadData = new DispatcherTimer();
-        private string logText = string.Empty;
-        private LogFile logFile = new LogFile();
+        private Logger logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>Initializes a new instance of the <see cref="MainViewModel" /> class.</summary>
         public MainViewModel()
         {
-            if (!File.Exists(this.dataBaseName))
+            try
             {
-                this.dbc.CreateBase();
-                this.dbc.CreateTable();
+                if (!File.Exists(DataBaseName))
+                {
+                    this.dbc.CreateBase();
+                    this.dbc.CreateTable();
+                }
+
+                // Сортировка
+                this.SortNameAscCommand = new Command(arg => this.ClickMethodSortNameAsc());
+                this.SortNameDescCommand = new Command(arg => this.ClickMethodSortNameDesc());
+
+                this.ClickSearch = new Command(arg => this.ClickMethodSearch());
+
+                this.Vacancies = new ObservableCollection<VacModel> { };
+                this.VacanciesT = new ObservableCollection<VacModel> { };
+                this.Misc = new Misc { };
+
+                this.Vacancies = this.dbc.ReadData(1, string.Empty);
+
+                this.Misc.VacCount = this.Vacancies.Count();
+
+                this.Misc.SelectedIndex = 0;
+                this.Misc.SearchTypeSite = true;
+
+                this.logger.Info("Запуск приложения VacancyParser");
             }
-
-            // Сортировка
-            this.SortNameAscCommand = new Command(arg => this.ClickMethodSortNameAsc());
-            this.SortNameDescCommand = new Command(arg => this.ClickMethodSortNameDesc());
-
-            this.ClickSearch = new Command(arg => this.ClickMethodSearch());
-
-            this.Vacancies = new ObservableCollection<VacModel> { };
-            this.VacanciesT = new ObservableCollection<VacModel> { };
-            this.Misc = new Misc { };
-
-            this.Vacancies = this.dbc.ReadData(1, string.Empty);
-
-            this.Misc.VacCount = this.Vacancies.Count();
-
-            this.Misc.SelectedIndex = 0;
-            this.Misc.SearchTypeSite = true;
-
-            this.logText = DateTime.Now.ToString() + "|event|MainViewModel - MainViewModel| Запуск приложения VacancyParser";
-            this.logFile.WriteLog(this.logText);
+            catch (Exception ex)
+            {
+                this.logger.Error(ex.Message);
+            }
         }
 
         /// <summary>Команда ListSelChang.</summary>
@@ -143,15 +148,12 @@
                 this.checkDownloadData.Tick += new EventHandler(this.CheckFlag);
                 this.checkDownloadData.Start();
 
-                this.logText = DateTime.Now.ToString() + "|event|MainViewModel - ClickMethodSearch| Поиск по сайту по слову/фразе " + searchPrepare;
-                this.logFile.WriteLog(this.logText);
+                this.logger.Info("Поиск по сайту по слову/фразе " + searchPrepare);
             }
             else
             {
                 this.DBSearch(this.Misc.SearchText);
-
-                this.logText = DateTime.Now.ToString() + "|event|MainViewModel - ClickMethodSearch| Поиск по БД по слову/фразе " + Misc.SearchText;
-                this.logFile.WriteLog(this.logText);
+                this.logger.Info("Поиск по БД по слову / фразе " + Misc.SearchText);
             }             
         }
 

@@ -7,17 +7,16 @@
     using System.Net;
     using System.Text;
     using System.Text.RegularExpressions;
-
     using HtmlAgilityPack;
     using Model;
+    using NLog;
 
     /// <summary>Парсер страницы сайта.</summary>
     public class HtmlParser
     {
+        private Logger logger = LogManager.GetCurrentClassLogger();
         private List<VacModel> vacansies;
         private VacModel vac;
-        private string logText = string.Empty;
-        private LogFile logFile = new LogFile();
 
         /// <summary>Распарсить.</summary>
         /// <param name="searchText">Строка поиска.</param>
@@ -29,9 +28,7 @@
             var fullHtml = string.Empty;
             var picWebPath = string.Empty;
             var webPath = string.Empty;          
-
-            try
-            {     
+   
                 using (var client = new WebClient())
                 {
                     client.Encoding = Encoding.UTF8;
@@ -224,13 +221,7 @@
 
                         this.vacansies.Add(this.vac);
                     }
-                }                
-            }
-            catch (Exception ex)
-            {
-                this.logText = DateTime.Now.ToString() + "|fail|HtmlParser - Parse|" + ex.Message;
-                this.logFile.WriteLog(this.logText);
-            }
+                }
 
             return this.vacansies;
         }
