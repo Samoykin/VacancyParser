@@ -27,10 +27,10 @@
         #region Properties
 
         /// <summary>Свойство возможно ли выполнить команду.</summary>
-        public Predicate<object> CanExecuteDelegate { get; set; }
+        private Predicate<object> CanExecuteDelegate { get; set; }
 
         /// <summary>Свойство выполнить команду.</summary>
-        public Action<object> ExecuteDelegate { get; set; }
+        private Action<object> ExecuteDelegate { get; set; }
 
         #endregion        
 
@@ -41,22 +41,14 @@
         /// <returns>true, если команда может быть выполнена; в противном случае - false.</returns>
         public bool CanExecute(object parameter)
         {
-            if (this.CanExecuteDelegate != null)
-            {
-                return this.CanExecuteDelegate(parameter);
-            }
-
-            return true;
+            return this.CanExecuteDelegate == null || this.CanExecuteDelegate(parameter);
         }
 
         /// <summary>Выполняет <see cref="Command"/> текущей цели команды.</summary>
         /// <param name="parameter">Данные, используемые командой. Если команда не требует передачи данных, этот объект можно установить равным NULL.</param>
         public void Execute(object parameter)
         {
-            if (this.ExecuteDelegate != null)
-            {
-                this.ExecuteDelegate(parameter);
-            }
+            this.ExecuteDelegate?.Invoke(parameter);
         }
 
         #endregion

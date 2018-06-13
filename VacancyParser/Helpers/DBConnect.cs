@@ -11,7 +11,7 @@
     using NLog;
 
     /// <summary>База банных.</summary>
-    public class DBConnect
+    public class DbConnect
     {        
         private const string DatabaseName = "VacancyDB.sqlite";
         private const string Pass = "Xt,ehfirf3";
@@ -33,12 +33,11 @@
         /// <summary>Создать таблицу.</summary>
         public void CreateTable()
         {
-            
             using (var conn = new SQLiteConnection(this.Connstring()))
             {
                 var query = "CREATE TABLE vacancyInfo (id INTEGER PRIMARY KEY UNIQUE, VacId VARCHAR, Name VARCHAR, Company VARCHAR, Website VARCHAR, Salary VARCHAR, Exp VARCHAR, City VARCHAR, Description VARCHAR, Address VARCHAR, Type VARCHAR, DateVac VARCHAR);";
 
-                SQLiteCommand command = new SQLiteCommand(query, conn);
+                var command = new SQLiteCommand(query, conn);
                 conn.Open();
                 command.ExecuteNonQuery();
                 conn.Close();
@@ -51,9 +50,9 @@
         {
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
-                    for (int i = 0; i < vacancies.Count(); i++)
+                    for (var i = 0; i < vacancies.Count(); i++)
                     {
-                        string strDescr = string.Join(" ", vacancies[i].Description.ToArray());
+                        var strDescr = string.Join(" ", vacancies[i].Description.ToArray());
 
                         var command = new SQLiteCommand($"INSERT INTO 'vacancyInfo' ('VacId', 'Name', 'Company', 'Website', 'Salary', 'Exp', 'City', 'Description', 'Address', 'Type', 'DateVac') VALUES ('{vacancies[i].Id}', '{vacancies[i].Name}', '{vacancies[i].Company}', '{vacancies[i].Website}', '{vacancies[i].Salary}', '{vacancies[i].Exp}', '{vacancies[i].City}', '{strDescr}', '{vacancies[i].Address}', '{vacancies[i].Type}', '{vacancies[i].DateVac}')", conn);
                         conn.Open();
@@ -70,8 +69,6 @@
         public ObservableCollection<VacModel> ReadData(short param, string searchText)
         {
             var vacancies = new ObservableCollection<VacModel>();
-            VacModel vac;
-            var descrText = string.Empty;
             var query = string.Empty;
 
             switch (param)
@@ -93,33 +90,35 @@
 
                     foreach (DbDataRecord record in reader)
                     {
-                        vac = new VacModel();
-                        vac.Id = record["VacId"].ToString();
-                        vac.Name = record["Name"].ToString();
-                        vac.Company = record["Company"].ToString();
-                        vac.Website = record["Website"].ToString();
-                        vac.Salary = record["Salary"].ToString();
-                        vac.Exp = record["Exp"].ToString();
-                        vac.City = record["City"].ToString();
-                        descrText = record["Description"].ToString();
+                        var vac = new VacModel
+                        {
+                            Id = record["VacId"].ToString(),
+                            Name = record["Name"].ToString(),
+                            Company = record["Company"].ToString(),
+                            Website = record["Website"].ToString(),
+                            Salary = record["Salary"].ToString(),
+                            Exp = record["Exp"].ToString(),
+                            City = record["City"].ToString()
+                        };
+
+                        var descrText = record["Description"].ToString();
 
                         vac.Description = new List<string>();
 
-                        // преобразование описания вакансии в абзацы
-                        var tempText = string.Empty;
-                        int indx = 0;
-
+                        // Преобразование описания вакансии в абзацы
                         while (descrText.Length > 0)
                         {
+                            var indx = 0;
                             if (descrText.Length > 2)
                             {
-                                indx = descrText.IndexOf("  ", 3);
+                                indx = descrText.IndexOf("  ", 3, StringComparison.Ordinal);
                             }
                             else
                             {
                                 break;
                             }
 
+                            string tempText;
                             if (indx != -1)
                             {
                                 tempText = descrText.Remove(indx);
@@ -145,7 +144,7 @@
                         vac.Address = record["Address"].ToString();
                         vac.Type = record["Type"].ToString();
                         vac.DateVac = record["DateVac"].ToString();
-                        vac.Pic = AppDomain.CurrentDomain.BaseDirectory + "//img//" + vac.Id + ".jpg";
+                        vac.Pic = $"{AppDomain.CurrentDomain.BaseDirectory}/img/{vac.Id}.jpg";
                         vacancies.Add(vac);
                     }
 
@@ -158,11 +157,9 @@
         /// <summary>Сравнение считанных данных с сайта с данными в БД по id чтобы исключить дублирования данных в БД.</summary>
         /// <param name="siteVacansies">Вакансии.</param>
         /// <returns>Состояние.</returns>
-        public bool CheckVacanciesInDB(List<VacModel> siteVacansies)
+        public bool CheckVacanciesInDb(List<VacModel> siteVacansies)
         {
             var vacId = new List<string>();
-            var siteVacId = new List<string>();
-            var newVacId = new List<string>();
             var siteVacTemp = new List<VacModel>();
             var flag = false;
 
@@ -173,42 +170,27 @@
                     var command = new SQLiteCommand("SELECT VacId FROM vacancyInfo", conn);
 
                     var reader = command.ExecuteReader();
-                    foreach (DbDataRecord record in reader)
-                    {
-                        vacId.Add(record["VacId"].ToString());
-                    }
+                    vacId.AddRange(from DbDataRecord record in reader select record["VacId"].ToString());
 
                     conn.Close();
                 }            
 
             // выбираем новые вакансии
-            foreach (var v in siteVacansies)
-            {
-                siteVacId.Add(v.Id);                
-            }
+            var siteVacId = siteVacansies.Select(v => v.Id).ToList();
 
             var t1 = siteVacId.Except(vacId);
 
-            foreach (var str in t1)
-            {
-                newVacId.Add(str);
-            }
+            var newVacId = t1.ToList();
 
             foreach (var v in siteVacansies)
             {
-                foreach (var s in newVacId)
-                {
-                    if (s == v.Id)
-                    {
-                        siteVacTemp.Add(v);
-                    }
-                }
+                siteVacTemp.AddRange(from s in newVacId where s == v.Id select v);
             }
 
             // записываем новые вакансии в БД
                 using (var conn = new SQLiteConnection(this.Connstring()))
                 {
-                    for (int i = 0; i < newVacId.Count(); i++)
+                    for (var i = 0; i < newVacId.Count(); i++)
                     {
                         var strDescr = string.Join("  ", siteVacTemp[i].Description.ToArray());
 
@@ -226,7 +208,7 @@
 
         private string Connstring()
         {
-            string connStr = string.Format("Data Source={0};Version=3;Password={1};", DatabaseName, Pass);
+            var connStr = $"Data Source={DatabaseName};Version=3;Password={Pass};";
             return connStr;
         }
     }

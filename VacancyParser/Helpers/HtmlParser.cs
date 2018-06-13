@@ -9,12 +9,10 @@
     using System.Text.RegularExpressions;
     using HtmlAgilityPack;
     using Model;
-    using NLog;
 
     /// <summary>Парсер страницы сайта.</summary>
     public class HtmlParser
     {
-        private Logger logger = LogManager.GetCurrentClassLogger();
         private List<VacModel> vacansies;
         private VacModel vac;
 
@@ -25,14 +23,14 @@
         {
             this.vacansies = new List<VacModel>();
             
-            var fullHtml = string.Empty;
+            string fullHtml;
             var picWebPath = string.Empty;
             var webPath = string.Empty;          
    
                 using (var client = new WebClient())
                 {
                     client.Encoding = Encoding.UTF8;
-                    string address2 = @"https://hh.ru/search/vacancy?enable_snippets=true&area=113&text=" + searchText + @"&search_field=name&clusters=true&page=0";
+                    var address2 = @"https://hh.ru/search/vacancy?enable_snippets=true&area=113&text=" + searchText + @"&search_field=name&clusters=true&page=0";
                     fullHtml = client.DownloadString(address2);
                 }
 
@@ -90,20 +88,20 @@
                             }
 
                             // название вакансии
-                            var htmlField = docVac.DocumentNode.SelectNodes("//h1[@class='title b-vacancy-title']");
+                            var htmlField = docVac.DocumentNode.SelectNodes("//a[@class='bloko-link bloko-link_list HH-LinkModifier']");
                             if (htmlField != null)
                             {
-                                this.vac.Name = htmlField.FirstOrDefault().InnerText;
+                                this.vac.Name = htmlField.FirstOrDefault()?.InnerText;
                             }
 
                             // название компании
-                            htmlField = docVac.DocumentNode.SelectNodes("//div[@class='companyname']");
+                            htmlField = docVac.DocumentNode.SelectNodes("//a[@class='vacancy-company-name']");
                             if (htmlField != null)
                             {
-                                companyNameTemp = htmlField.FirstOrDefault().InnerText;
+                                companyNameTemp = htmlField.FirstOrDefault()?.InnerText;
                             }
 
-                            if (companyNameTemp.IndexOf(@"< !--noindex-- >)") != -1)
+                            if (companyNameTemp != null && companyNameTemp.IndexOf(@"< !--noindex-- >)", StringComparison.Ordinal) != -1)
                             {
                                 this.vac.Company = companyNameTemp.Replace(@"< !--noindex-- >)", string.Empty);
                             }
@@ -113,35 +111,35 @@
                             }
 
                             // зарплата
-                            htmlField = docVac.DocumentNode.SelectNodes("//td[@class='l-content-colum-1 b-v-info-content']");
+                            htmlField = docVac.DocumentNode.SelectNodes("//p[@class='vacancy-salary']");
                             if (htmlField != null)
                             {
-                                this.vac.Salary = htmlField.FirstOrDefault().InnerText;
+                                this.vac.Salary = htmlField.FirstOrDefault()?.InnerText;
                             }
 
                             // описание
-                            htmlField = docVac.DocumentNode.SelectNodes("//div[@class='l-paddings b-vacancy-desc g-user-content']");
+                            htmlField = docVac.DocumentNode.SelectNodes("//div[@class='g-user-content']");
                             if (htmlField != null)
                             {
-                                descrText = htmlField.FirstOrDefault().InnerText;
+                                descrText = htmlField.FirstOrDefault()?.InnerText;
                             }
 
                             // преобразование описания вакансии в абзацы
-                            var tempText = string.Empty;
-                            var indx = 0;
                             this.vac.Description = new List<string>();
 
-                            while (descrText.Length > 0)
+                            while (!string.IsNullOrEmpty(descrText))
                             {
+                                var indx = 0;
                                 if (descrText.Length > 1)
                                 {
-                                    indx = descrText.IndexOf("  ", 2);
+                                    indx = descrText.IndexOf("  ", 2, StringComparison.Ordinal);
                                 }
                                 else
                                 {
                                     break;
                                 }
 
+                                string tempText;
                                 if (indx != -1)
                                 {
                                     tempText = descrText.Remove(indx);
@@ -164,59 +162,59 @@
                                 }
                             }
 
-                            // город
+                            // Город
                             htmlField = docVac.DocumentNode.SelectNodes("//td[@class='l-content-colum-2 b-v-info-content']");
                             if (htmlField != null)
                             {
                                 this.vac.City = htmlField.FirstOrDefault().InnerText;
                             }
 
-                            // адрес
+                            // Адрес
                             htmlField = docVac.DocumentNode.SelectNodes("//div[@class='vacancy-address-text HH-Maps-ShowAddress-Address']");
                             if (htmlField != null)
                             {
                                 this.vac.Address = htmlField.FirstOrDefault().InnerText;
                             }
 
-                            // навыки
+                            // Навыки
                             htmlField = docVac.DocumentNode.SelectNodes("//span[@class='Bloko-TagList-Text']");
                             if (htmlField != null)
                             {
                                 this.vac.Exp = htmlField.FirstOrDefault().InnerText;
                             }
 
-                            // тип занятости
+                            // Тип занятости
                             htmlField = docVac.DocumentNode.SelectNodes("//div[@class='l-content-paddings']");
                             if (htmlField != null)
                             {
                                 this.vac.Type = htmlField.FirstOrDefault().InnerText;
                             }
 
-                            // дата вакансии
-                            htmlField = docVac.DocumentNode.SelectNodes("//time[@class='vacancy-sidebar__publication-date']");
+                            // Дата вакансии
+                            htmlField = docVac.DocumentNode.SelectNodes("//p[@class='vacancy-creation-time']");
                             if (htmlField != null)
                             {
                                 this.vac.DateVac = htmlField.FirstOrDefault().InnerText;
                             }
 
-                            // страница компании
-                            htmlField = docVac.DocumentNode.SelectNodes("//div[@class='companyname']");
+                            // Страница компании
+                            htmlField = docVac.DocumentNode.SelectNodes("//a[@class='vacancy-company-name']");
                             if (htmlField != null)
                             {
                                 webPath = htmlField.FirstOrDefault().FirstChild.GetAttributeValue("href", string.Empty);
                             }
 
-                            this.vac.Website = @"https://hh.ru" + webPath;
+                            this.vac.Website = $@"https://hh.ru{webPath}";
 
-                            // картинка
-                            htmlField = docVac.DocumentNode.SelectNodes("//div[@class='b-vacancy-companylogo']/a");
+                            // Картинка
+                            htmlField = docVac.DocumentNode.SelectNodes("//a[@class='vacancy-company-logo']");
                             if (htmlField != null)
                             {
                                 picWebPath = htmlField.FirstOrDefault().FirstChild.GetAttributeValue("src", string.Empty);
                             }
 
-                            this.vac.Pic = AppDomain.CurrentDomain.BaseDirectory + "//img//" + this.vac.Id + ".jpg";
-                            this.SavePic(@"https://hh.ru" + picWebPath, this.vac.Pic);
+                            this.vac.Pic = $@"{AppDomain.CurrentDomain.BaseDirectory}/img/{this.vac.Id}.jpg";
+                            this.SavePic($@"https://hh.ru{picWebPath}", this.vac.Pic);
                         }
 
                         this.vacansies.Add(this.vac);
@@ -230,8 +228,10 @@
         {
             if (!File.Exists(path))
             {
-                var wc = new WebClient();
-                wc.Credentials = CredentialCache.DefaultCredentials;
+                var wc = new WebClient
+                {
+                    Credentials = CredentialCache.DefaultCredentials
+                };
 
                 wc.DownloadFile(source, path);
             }

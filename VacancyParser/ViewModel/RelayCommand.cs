@@ -24,7 +24,7 @@
         {
             if (execute == null)
             {
-                throw new ArgumentNullException("execute");
+                throw new ArgumentNullException(nameof(execute));
             }
 
             this.execute = execute;
@@ -39,7 +39,7 @@
         /// <returns>true, если команда может быть выполнена; в противном случае - false.</returns>
         public bool CanExecute(object parameter)
         {
-            return this.canExecute == null ? true : this.canExecute((T)parameter);
+            return this.canExecute?.Invoke((T)parameter) ?? true;
         }
 
         /// <summary>Выполняет <see cref="RelayCommand"/> текущей цели команды.</summary>
@@ -53,10 +53,7 @@
         public void RaiseCanExecuteChanged()
         {
             var handler = this.CanExecuteChanged;
-            if (handler != null)
-            {
-                handler(this, EventArgs.Empty);
-            }
+            handler?.Invoke(this, EventArgs.Empty);
         }
     }
 }

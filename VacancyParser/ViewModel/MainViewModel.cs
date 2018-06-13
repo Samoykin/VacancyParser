@@ -16,7 +16,7 @@
     public class MainViewModel
     {
         private const string DataBaseName = "VacancyDB.sqlite";
-        private DBConnect dbc = new DBConnect();
+        private DbConnect dbc = new DbConnect();
         private bool flag = false;
         private DispatcherTimer checkDownloadData = new DispatcherTimer();
         private Logger logger = LogManager.GetCurrentClassLogger();
@@ -81,26 +81,20 @@
         // Загрузка данных с сайта асинхронно и запись в БД
         private async void DataDownload(string searchText)
         {
-            HtmlParser htmlParser = new HtmlParser();
-            List<VacModel> siteVacansies;
+            var htmlParser = new HtmlParser();
 
-            siteVacansies = await Task<List<VacModel>>.Factory.StartNew(() =>
-            {
-                return htmlParser.Parse(searchText);
-            });
+            var siteVacansies = await Task<List<VacModel>>.Factory.StartNew(() => htmlParser.Parse(searchText));
 
-            this.flag = this.dbc.CheckVacanciesInDB(siteVacansies);
+            this.flag = this.dbc.CheckVacanciesInDb(siteVacansies);
         }
         
         // Сортировка по возрастанию
         private void ClickMethodSortNameAsc()
         {
-            ObservableCollection<VacModel> vacanciesTemp;
-
-            vacanciesTemp = this.Vacancies;
+            var vacanciesTemp = this.Vacancies;
             vacanciesTemp = new ObservableCollection<VacModel>(vacanciesTemp.OrderBy(a => a.Name));
             this.Vacancies.Clear();
-            foreach (VacModel ee in vacanciesTemp)
+            foreach (var ee in vacanciesTemp)
             {
                 this.Vacancies.Add(ee);
             }
@@ -111,12 +105,10 @@
         // Сортировка по убыванию
         private void ClickMethodSortNameDesc()
         {
-            ObservableCollection<VacModel> vacanciesTemp;
-
-            vacanciesTemp = this.Vacancies;
+            var vacanciesTemp = this.Vacancies;
             vacanciesTemp = new ObservableCollection<VacModel>(vacanciesTemp.OrderByDescending(a => a.Name));
             this.Vacancies.Clear();
-            foreach (VacModel ee in vacanciesTemp)
+            foreach (var ee in vacanciesTemp)
             {
                 this.Vacancies.Add(ee);
             }
@@ -127,25 +119,17 @@
         // Поиск
         private void ClickMethodSearch()
         {
-            if (this.Misc.SearchTypeSite == true)
+            if (this.Misc.SearchTypeSite)
             {
                 this.Misc.StatusUpd = "Вычитывание данных с сайта";
                 this.flag = false;
 
-                string searchPrepare = string.Empty;
-                if (this.Misc.SearchText.IndexOf(" ") != -1)
-                {
-                    searchPrepare = this.Misc.SearchText.Replace(" ", "+");
-                }
-                else
-                {
-                    searchPrepare = this.Misc.SearchText;
-                }
+                var searchPrepare = this.Misc.SearchText.IndexOf(" ", StringComparison.Ordinal) != -1 ? this.Misc.SearchText.Replace(" ", "+") : this.Misc.SearchText;
 
                 this.DataDownload(searchPrepare);
 
                 this.checkDownloadData.Interval = new TimeSpan(0, 0, 1);
-                this.checkDownloadData.Tick += new EventHandler(this.CheckFlag);
+                this.checkDownloadData.Tick += this.CheckFlag;
                 this.checkDownloadData.Start();
 
                 this.logger.Info("Поиск по сайту по слову/фразе " + searchPrepare);
@@ -164,20 +148,19 @@
             this.VacanciesT = this.dbc.ReadData(2, searchText);
 
             this.Vacancies.Clear();
-            foreach (VacModel vm in this.VacanciesT)
+            foreach (var vm in this.VacanciesT)
             {
                 this.Vacancies.Add(vm);
             }
 
             this.Misc.SelectedIndex = 0;
-
             this.Misc.VacCount = this.Vacancies.Count();
         }
 
         // Проверка загрузки данных чтобы поменять статус
         private void CheckFlag(object sender, EventArgs e)
         {
-            if (this.flag == true)
+            if (this.flag)
             {
                 this.Misc.StatusUpd = "Данные обновлены";
                 this.DBSearch(this.Misc.SearchText);
