@@ -41,6 +41,8 @@
                 conn.Open();
                 command.ExecuteNonQuery();
                 conn.Close();
+
+                this.WriteDefaultData();
             }
         }
 
@@ -210,6 +212,35 @@
         {
             var connStr = $"Data Source={DatabaseName};Version=3;Password={Pass};";
             return connStr;
+        }
+
+        private void WriteDefaultData()
+        {
+            var vacansyLst = new List<VacModel>();
+            var vac = new VacModel
+            {
+                Id = "191919",
+                Name = "Программист",
+                Company = "ООО Solar System",
+                Website = @"http://solarsystem.com",
+                Salary = "от 150 000 до 200 000 руб. на руки",
+                Exp = "C#",
+                City = "Москва",
+                Address = "Москва, Оружейный переулок, 81",
+                Type = "Полная занятость, полный день",
+                DateVac = "14 июня 2018",
+                Description = new List<string>
+                {
+                    "Приглашаем опытного программиста для работы в проектах на крупнейшего европейского поставщика решений и сервисов.",
+                    "Обязанности: Разработка клиентской и серверной части ПО, решение архитектурных задач, реализация уникальной сложной бизнес логики.",
+                    "Проектирование и разработка высоконагруженных распределенных систем для финансовых сервисов",
+                    "Мы предлагаем: Высокий уровень вознаграждения Возможности для профессионального роста и повышения квалификации.",
+                    "Требования: Отличные знания в программировании опыт работы в .Net/C#-проектах."
+                }
+            };
+
+            vacansyLst.Add(vac);
+            this.CheckVacanciesInDb(vacansyLst);
         }
     }
 }
